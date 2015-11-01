@@ -1,34 +1,54 @@
 package crawler;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.Reader;
-import java.net.MalformedURLException;
-import java.net.URL;
+import java.io.*;
 
 
-import com.google.gson.Gson;
+import twitter4j.StallWarning;
+import twitter4j.Status;
+import twitter4j.StatusDeletionNotice;
+//import twitter4j.*;
+import twitter4j.StatusListener;
+import twitter4j.TwitterException;
+import twitter4j.TwitterStream;
+import twitter4j.TwitterStreamFactory;
+import twitter4j.conf.ConfigurationBuilder;
+
 
 public class TwitterGetter {
-
-	public static void main(String[] args) throws MalformedURLException, IOException {
-		String consumer_key = "&oauth_consumer_key=k2Ykj3xZkolzy0NYFGRAZqbTg";
-		String access_token = "&oauth_token=1499500044-FvdxAP0owsCyAmVGZ4dbrSHUOQN5te8l0tX3Uld";
-		String signature_method = "&oauth_signature_method=HMAC-SHA1&oauth_timestamp=1446024385&"
-				+ "oauth_nonce=3Vp41N&oauth_version=1.0&oauth_signature=4VkOspk9JboXDJy4DgP9xGjhnlQ%3D";
-		
-		String query = "Toronto";
-		
-		String api_base = "https://api.twitter.com/1.1/geo/search.json?";
-		
-		String url = api_base+"query="+query+consumer_key+access_token+signature_method;
-		
-		InputStream input = new URL(url).openStream();
-		Reader reader = new InputStreamReader(input, "UTF-8");
-		Places data = new Gson().fromJson(reader, Places.class);
-		System.out.println(data);
-		
+	
+	public static void main(String[] args) throws TwitterException, IOException{
+		String[] authKeys = auth.authKeys();
+		 
+		ConfigurationBuilder cb = new ConfigurationBuilder();
+			cb.setDebugEnabled(true)
+			.setOAuthConsumerKey(authKeys[0])
+			.setOAuthConsumerSecret(authKeys[1])
+			.setOAuthAccessToken(authKeys[2])
+			.setOAuthAccessTokenSecret(authKeys[3]);	
+					
+	    StatusListener listener = new StatusListener(){
+	        public void onStatus(Status status) {
+	            System.out.println(status.getUser().getName() + " : " + status.getText());
+	        }
+	        public void onDeletionNotice(StatusDeletionNotice statusDeletionNotice) {}
+	        public void onTrackLimitationNotice(int numberOfLimitedStatuses) {}
+	        public void onException(Exception ex) {
+	            ex.printStackTrace();
+	        }
+			@Override
+			public void onScrubGeo(long arg0, long arg1) {
+				// TODO Auto-generated method stub
+				
+			}
+			@Override
+			public void onStallWarning(StallWarning arg0) {
+				// TODO Auto-generated method stub
+				
+			}
+	    };
+	    TwitterStream twitterStream = new TwitterStreamFactory(cb.build()).getInstance();
+	    twitterStream.addListener(listener);
+	    // sample() method internally creates a thread which manipulates TwitterStream and calls these adequate listener methods continuously.
+	    twitterStream.sample();
 	}
-
 }
