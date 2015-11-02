@@ -1,0 +1,7 @@
+bin/
+.project
+.settings/
+.classpath
+.checkstyle
+lib/
+/src/crawler/auth.java
