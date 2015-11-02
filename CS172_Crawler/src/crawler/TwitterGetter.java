@@ -2,7 +2,8 @@ package crawler;
 
 import java.io.*;
 
-
+import twitter4j.FilterQuery;
+import twitter4j.GeoLocation;
 import twitter4j.StallWarning;
 import twitter4j.Status;
 import twitter4j.StatusDeletionNotice;
@@ -16,6 +17,7 @@ import twitter4j.conf.ConfigurationBuilder;
 
 public class TwitterGetter {
 	
+	
 	public static void main(String[] args) throws TwitterException, IOException{
 		String[] authKeys = auth.authKeys();
 		 
@@ -25,10 +27,31 @@ public class TwitterGetter {
 			.setOAuthConsumerSecret(authKeys[1])
 			.setOAuthAccessToken(authKeys[2])
 			.setOAuthAccessTokenSecret(authKeys[3]);	
-					
+
+			
 	    StatusListener listener = new StatusListener(){
+			int count = 0;
+			File file = null;
+			FileWriter outFile = null;	    	
 	        public void onStatus(Status status) {
-	            System.out.println(status.getUser().getName() + " : " + status.getText());
+	        	try{
+	        		file = new File(Integer.toString(count) + ".txt");
+	        		outFile = new FileWriter(file, true);
+	        		GeoLocation loc = status.getGeoLocation();
+	        		//if(loc != null){
+	        			outFile.write(status.getUser().getName() + " : " + status.getGeoLocation() + " : " + 
+	        					status.getText().replaceAll("\\n","").replaceAll("\\r","") + "\n");
+	        		//}
+        			outFile.close();
+	        		if(file.length() > 10000000){
+	        			count++;
+	        		}   
+	        	} 
+	        	catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+
 	        }
 	        public void onDeletionNotice(StatusDeletionNotice statusDeletionNotice) {}
 	        public void onTrackLimitationNotice(int numberOfLimitedStatuses) {}
@@ -38,7 +61,6 @@ public class TwitterGetter {
 			@Override
 			public void onScrubGeo(long arg0, long arg1) {
 				// TODO Auto-generated method stub
-				
 			}
 			@Override
 			public void onStallWarning(StallWarning arg0) {

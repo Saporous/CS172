@@ -13,7 +13,16 @@ import org.jsoup.nodes.Document;
 import java.io.IOException;
 
 public class WebGetter {
-
+	public static String getTitle(String url){
+		Document doc = null;
+		try {
+			doc = Jsoup.connect(url).get();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return doc.title();
+	}
 	public static void main(String[] args) {
 		//THIS CODE WORKS FOR DOWNLOADING WEBPAGES
 		String html = "http://www.ucr.edu/";
