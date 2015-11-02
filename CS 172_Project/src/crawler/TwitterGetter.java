@@ -1,21 +1,14 @@
 package crawler;
 
 import java.io.*;
-
-
-import twitter4j.StallWarning;
-import twitter4j.Status;
-import twitter4j.StatusDeletionNotice;
-//import twitter4j.*;
-import twitter4j.StatusListener;
-import twitter4j.TwitterException;
-import twitter4j.TwitterStream;
-import twitter4j.TwitterStreamFactory;
+import java.util.Date;
+import twitter4j.*;
 import twitter4j.conf.ConfigurationBuilder;
+import com.google.gson.Gson;
 
 
 public class TwitterGetter {
-	
+		
 	public static BufferedWriter openFile(String filename) {
 		FileWriter fWriter = null;
 		try {
@@ -39,7 +32,7 @@ public class TwitterGetter {
 		}
 		return Tweet.length();
 	}
-	
+		
 	public static ConfigurationBuilder setAuth() {
 		String[] authKeys = auth.authKeys();
 		ConfigurationBuilder cb = new ConfigurationBuilder();
@@ -53,24 +46,24 @@ public class TwitterGetter {
 	
 	public static StatusListener createTweetListener(){
 		StatusListener tweetListener = new StatusListener() {
+			boolean test = true;
 	        public void onStatus(Status status) {
-	            System.out.println(status.getUser().getName() + " : " + status.getText());
+	        		Tweet tweet = new Tweet(status);
+	        		if(test == true) {
+	        			Gson gson = new Gson();
+	        			String tweetJson = gson.toJson(tweet);
+	        			System.out.println(tweetJson);
+	        			test = false;
+	        		}
 	        }
 	        public void onDeletionNotice(StatusDeletionNotice statusDeletionNotice) {}
 	        public void onTrackLimitationNotice(int numberOfLimitedStatuses) {}
+			public void onScrubGeo(long arg0, long arg1) {}
+			public void onStallWarning(StallWarning arg0) {}
 	        public void onException(Exception ex) {
 	            ex.printStackTrace();
 	        }
-			@Override
-			public void onScrubGeo(long arg0, long arg1) {
-				// TODO Auto-generated method stub
-				
-			}
-			@Override
-			public void onStallWarning(StallWarning arg0) {
-				// TODO Auto-generated method stub
-				
-			}	
+	
 		};
 		return tweetListener;
 	}
@@ -81,8 +74,24 @@ public class TwitterGetter {
 	
 	    StatusListener listener = createTweetListener();
 	    TwitterStream twitterStream = new TwitterStreamFactory(cb.build()).getInstance();
+	    
 	    twitterStream.addListener(listener);
-	    // sample() method internally creates a thread which manipulates TwitterStream and calls these adequate listener methods continuously.
+	    //FilterQuery tweetFilterQuery = new FilterQuery();
+	    //tweetFilterQuery.language(new String[]{"en"});
+	    //twitterStream.filter(tweetFilterQuery);
+	    
+	    
 	    twitterStream.sample();
+	    
+	    try {
+	    	Thread.sleep(5000L);
+	    	System.out.println("Shutting Down");
+	    	twitterStream.cleanUp();
+	    	twitterStream.shutdown();
+	    }
+	    catch(Exception e) {
+	    	twitterStream.cleanUp();
+	    	twitterStream.shutdown();
+	    }
 	}
 }
