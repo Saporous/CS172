@@ -1,33 +1,75 @@
 package crawler;
 
+import java.io.UnsupportedEncodingException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.nio.charset.Charset;
 import java.util.Date;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.regex.*;
 
-import twitter4j.GeoLocation;
+import com.google.gson.Gson;
+
 import twitter4j.Place;
 import twitter4j.Status;
-import twitter4j.User;
+
 
 public class Tweet {
 	//private GeoLocation geoLocation;
-	private Place place;
-	private Date timestamp;
-	private String text;
-	//private User usr;
-	private String name;
 	private String screenName;
-	private String links[];
+	private String name;
+	
+	private Date timestamp;
+	private Place place;
+	private String text;
+	
+	private Link links[];
 	
 	//Other useful info
+	private String hashtags[];
 	private String lang;
 	private boolean isRetweet;
-	private String hashtags[];
 	
-	public static String[] parseTextForLinks(String text) {
-		String links[] = new String[0];
+	public static Link[] parseTextForLinks(String text) {
+		if(text.contains("http") == false) {
+			return null;
+		}
+		Set<Link> linkList = new HashSet<Link>();
+		
+		String[] textParts = text.split("\\s+");
+		for (String part : textParts) {
+			if(part.startsWith("http") == true) {
+				try{
+					URL url = new URL(part);
+					if(url.getHost() != null) {
+						linkList.add(new Link(part));
+					}
+				}
+				catch(MalformedURLException e) {
+					continue;
+				}
+			}
+		}
+		if(linkList.isEmpty() != true) {
+			Link links[] = linkList.toArray(new Link[linkList.size()]);
+			return links;
+		}
 		return null;
 	}
+	
 	public static String[] parseTextForHashtags(String text) {
-		String hashtags[] = new String[0];
+		if(text.contains("#") == false){
+			return null;
+		}
+		Set<String> hashtagList = new HashSet<String>();
+		Matcher matcher = Pattern.compile("#\\s*(\\w+)").matcher(text);
+		while(matcher.find()){
+			hashtagList.add("#".concat(matcher.group(1)) );
+		}
+		if(hashtagList.isEmpty() != true) {
+			return hashtagList.toArray(new String[hashtagList.size()]);
+		}
 		return null;
 	}
 	
@@ -35,7 +77,15 @@ public class Tweet {
     	//this.geoLocation = status.getGeoLocation();
     	this.place = status.getPlace();
     	this.timestamp = status.getCreatedAt();
-    	this.text = status.getText();
+    	try{
+    		String textTemp = status.getText();
+    		byte[] array = textTemp.getBytes("UTF-8");
+    		this.text = new String(array, Charset.forName("UTF-8"));
+    	}
+    	catch(UnsupportedEncodingException e) {
+    		System.out.println("encoding failed");
+    		this.text = status.getText();
+    	}
     	this.name = status.getUser().getName();
     	this.screenName = status.getUser().getScreenName();
     	this.links = parseTextForLinks(this.text);
@@ -71,8 +121,12 @@ public class Tweet {
 		return this.screenName;
 	}
 	
-	public String[] getLinks() {
+	public Link[] getLinks() {
 		return this.links;
+	}
+	
+	public String getLang() {
+		return this.lang;
 	}
 	
 	public boolean getIsRetweet() {
@@ -81,5 +135,10 @@ public class Tweet {
 	
 	public String[] getHashtags() {
 		return this.hashtags;
+	}
+	
+	public String toJSON() {
+		Gson gson = new Gson();
+		return gson.toJson(this);
 	}
 }

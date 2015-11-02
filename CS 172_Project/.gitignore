@@ -5,3 +5,4 @@ bin/
 .checkstyle
 lib/
 /src/crawler/auth.java
+Tweets/

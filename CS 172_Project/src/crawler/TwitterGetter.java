@@ -1,10 +1,8 @@
 package crawler;
 
 import java.io.*;
-import java.util.Date;
 import twitter4j.*;
 import twitter4j.conf.ConfigurationBuilder;
-import com.google.gson.Gson;
 
 
 public class TwitterGetter {
@@ -49,9 +47,8 @@ public class TwitterGetter {
 			boolean test = true;
 	        public void onStatus(Status status) {
 	        		Tweet tweet = new Tweet(status);
-	        		if(test == true) {
-	        			Gson gson = new Gson();
-	        			String tweetJson = gson.toJson(tweet);
+	        		if(test == true && tweet.getHashtags() != null) {
+	        			String tweetJson = tweet.toJSON();
 	        			System.out.println(tweetJson);
 	        			test = false;
 	        		}
@@ -80,11 +77,10 @@ public class TwitterGetter {
 	    //tweetFilterQuery.language(new String[]{"en"});
 	    //twitterStream.filter(tweetFilterQuery);
 	    
-	    
 	    twitterStream.sample();
 	    
 	    try {
-	    	Thread.sleep(5000L);
+	    	Thread.sleep(10000L);
 	    	System.out.println("Shutting Down");
 	    	twitterStream.cleanUp();
 	    	twitterStream.shutdown();
