@@ -2,6 +2,6 @@
 .project
 .settings
 .classpath
-.txt
+*.txt
 /lib/
 /src/crawler/auth.java

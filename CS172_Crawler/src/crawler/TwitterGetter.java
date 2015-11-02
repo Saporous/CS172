@@ -32,12 +32,21 @@ public class TwitterGetter {
 	    StatusListener listener = new StatusListener(){
 			int count = 0;
 			File file = null;
-			FileWriter outFile = null;	    	
+			FileWriter outFile = null;
+			
 	        public void onStatus(Status status) {
 	        	try{
 	        		file = new File(Integer.toString(count) + ".txt");
 	        		outFile = new FileWriter(file, true);
 	        		GeoLocation loc = status.getGeoLocation();
+	        		String[] links = new String[10];
+	        		String link = status.getText();
+	        		int i = 0;
+	        		while(link.indexOf("https://t.co") != -1){
+	        			links[i] = link.substring(link.indexOf("https://"), link.substring(link.indexOf("https://")).indexOf(" "));
+	        			link = link.substring(link.indexOf("https://")+23);
+	        			i++;
+	        		}
 	        		//if(loc != null){
 	        			outFile.write(status.getUser().getName() + " : " + status.getGeoLocation() + " : " + 
 	        					status.getText().replaceAll("\\n","").replaceAll("\\r","") + "\n");
