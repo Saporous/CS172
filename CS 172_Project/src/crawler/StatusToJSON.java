@@ -25,7 +25,6 @@ public class StatusToJSON implements Runnable{
 	}
 	
 	//Runnable execution
-	@Override
 	public void run() {
 		
 		while(true) {

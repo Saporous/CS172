@@ -6,3 +6,4 @@ bin/
 lib/
 /src/crawler/auth.java
 Tweets/
+/target/

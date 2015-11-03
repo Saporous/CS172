@@ -21,7 +21,6 @@ public class ThreadWriter implements Runnable {
 	}
 	
 	//Runnable execution
-	@Override
 	public void run() {
 		//Writes until file reaches required size
 		while(this.bytesWritten < this.maxFileSize) {
