@@ -1,11 +1,55 @@
 package crawler;
 
 import java.io.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
+
 import twitter4j.*;
 import twitter4j.conf.ConfigurationBuilder;
 
 
 public class TwitterGetter {
+	
+	final static LinkedBlockingQueue<Status> statusQueue= new LinkedBlockingQueue<Status>(300);
+
+	public static Writer[] createDirectoryAndFiles(int numFiles) {
+		File dir = new File("./Tweets");
+		dir.mkdir();
+		String fileName = new String("tweet");
+		String fileType = new String(".json");
+		String fullName;
+		
+		Writer tweetWriters[] = new Writer[numFiles];
+		for(int i = 0; i < numFiles; i++){
+			fullName = fileName + Integer.toString(i) + fileType;
+			File tweetFile = new File(dir,fullName);
+			try {
+				@SuppressWarnings("resource")
+				Writer out = new BufferedWriter(
+						new OutputStreamWriter(
+								new FileOutputStream(tweetFile), "UTF8"));
+				tweetWriters[i] = out;
+			} 
+			catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		
+		return tweetWriters;
+	}
+	
+	public static void closeWriters(Writer[] tweetWriters) {
+		for(int i = 0; i < tweetWriters.length; i++) {
+			try {
+				tweetWriters[i].close();
+			} catch (IOException e) {
+				System.out.println("Failed to close FileOutputStream");
+			}
+		}
+	}
 		
 	public static BufferedWriter openFile(String filename) {
 		FileWriter fWriter = null;
@@ -44,14 +88,11 @@ public class TwitterGetter {
 	
 	public static StatusListener createTweetListener(){
 		StatusListener tweetListener = new StatusListener() {
-			boolean test = true;
+			//boolean test = true;
 	        public void onStatus(Status status) {
-	        		Tweet tweet = new Tweet(status);
-	        		if(test == true && tweet.getHashtags() != null) {
-	        			String tweetJson = tweet.toJSON();
-	        			System.out.println(tweetJson);
-	        			test = false;
-	        		}
+	        		try {
+	        			statusQueue.add(status);
+	        		} catch (IllegalStateException e) {}
 	        }
 	        public void onDeletionNotice(StatusDeletionNotice statusDeletionNotice) {}
 	        public void onTrackLimitationNotice(int numberOfLimitedStatuses) {}
@@ -66,28 +107,35 @@ public class TwitterGetter {
 	}
 	
 	public static void main(String[] args) throws TwitterException, IOException{
-			 
+		
+		int filesToCreate = (args.length > 0) ? Integer.parseInt(args[0]) : 1;
+		//INIT steps
+		Writer tweetWriters[] = createDirectoryAndFiles(filesToCreate);
 		ConfigurationBuilder cb = setAuth();
-	
-	    StatusListener listener = createTweetListener();
+		StatusListener listener = createTweetListener();
 	    TwitterStream twitterStream = new TwitterStreamFactory(cb.build()).getInstance();
-	    
 	    twitterStream.addListener(listener);
-	    //FilterQuery tweetFilterQuery = new FilterQuery();
-	    //tweetFilterQuery.language(new String[]{"en"});
-	    //twitterStream.filter(tweetFilterQuery);
 	    
 	    twitterStream.sample();
 	    
+	    final ExecutorService tweetConsumers = Executors.newFixedThreadPool(10);
+	    for(int i = 0; i < tweetWriters.length; i++) {
+	    	tweetConsumers.submit(new ThreadWriter(tweetWriters[i],statusQueue, 10000000));
+	    }
+	    tweetConsumers.shutdown();
 	    try {
-	    	Thread.sleep(10000L);
-	    	System.out.println("Shutting Down");
-	    	twitterStream.cleanUp();
-	    	twitterStream.shutdown();
-	    }
-	    catch(Exception e) {
-	    	twitterStream.cleanUp();
-	    	twitterStream.shutdown();
-	    }
+			tweetConsumers.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+		} catch (InterruptedException e1) {
+			// TODO Auto-generated catch block
+			closeWriters(tweetWriters);
+			e1.printStackTrace();
+		}
+	    
+	    System.out.println("Shutting Down");
+	    twitterStream.cleanUp();
+	    twitterStream.shutdown();
+	    closeWriters(tweetWriters);
+	    
+	    System.out.println("Completed");
 	}
 }
