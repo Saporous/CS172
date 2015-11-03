@@ -3,39 +3,39 @@ package crawler;
 import java.io.*;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import twitter4j.Status;
-
+//Class used for multiThreading
+//Gets json format strings from queue
+//Writes to file
 public class ThreadWriter implements Runnable {
 
 	Writer tweetFileWriter;
-	LinkedBlockingQueue<Status> statusQueue;
+	LinkedBlockingQueue<String> jsonQueue;
 	int maxFileSize = 10000000;
 	int bytesWritten = 0;
 	
-	public ThreadWriter(Writer tfw, LinkedBlockingQueue<Status> sq, int maxSize) {
+	//Constructor
+	public ThreadWriter(Writer tfw, LinkedBlockingQueue<String> sq, int maxSize) {
 		this.tweetFileWriter = tfw;
-		this.statusQueue = sq;
+		this.jsonQueue = sq;
 		this.maxFileSize = maxSize;
 	}
+	
+	//Runnable execution
 	@Override
 	public void run() {
+		//Writes until file reaches required size
 		while(this.bytesWritten < this.maxFileSize) {
 			try {
-				Status status = this.statusQueue.take();
-				Tweet tweet = new Tweet(status);
-    			String tweetJson = tweet.toJSON();
+    			String tweetJson = this.jsonQueue.take();
     			this.tweetFileWriter.write(tweetJson + '\n');
-    			this.bytesWritten += tweetJson.length() + 1;
+    			this.bytesWritten += tweetJson.length();
 			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
-		
-		
+		return;
 	}
 
 }

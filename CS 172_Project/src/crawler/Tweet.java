@@ -14,9 +14,13 @@ import com.google.gson.Gson;
 import twitter4j.Place;
 import twitter4j.Status;
 
-
+//Tweet object, stores tweet data, status are converted to
+//these before being conveted to json objects.
 public class Tweet {
-	//private GeoLocation geoLocation;
+	
+	//Info required by project
+	//Place is used instead of geolocation
+	//as place contains geolocation and other useful info
 	private String screenName;
 	private String name;
 	
@@ -31,6 +35,7 @@ public class Tweet {
 	private String lang;
 	private boolean isRetweet;
 	
+	//Helper function parses text for links
 	public static Link[] parseTextForLinks(String text) {
 		if(text.contains("http") == false) {
 			return null;
@@ -58,6 +63,7 @@ public class Tweet {
 		return null;
 	}
 	
+	//Helper function parses text for hashtags
 	public static String[] parseTextForHashtags(String text) {
 		if(text.contains("#") == false){
 			return null;
@@ -73,10 +79,13 @@ public class Tweet {
 		return null;
 	}
 	
+	//Constructor creates object from status object
 	public Tweet(Status status) {
     	//this.geoLocation = status.getGeoLocation();
     	this.place = status.getPlace();
     	this.timestamp = status.getCreatedAt();
+    	//This part is necessary to store the tweets with UTF-8 encoding
+    	//will otherwise get a bunch of ???? for foreign chars
     	try{
     		String textTemp = status.getText();
     		byte[] array = textTemp.getBytes("UTF-8");
@@ -96,11 +105,8 @@ public class Tweet {
     	this.isRetweet = status.isRetweet();
     	this.hashtags = parseTextForHashtags(this.text);
 	}
-	/*
-	public GeoLocation getGeoLocation() {
-		return this.geoLocation;
-	}*/
 	
+	//various get functions for json
 	public Place getPlace() {
 		return this.place;
 	}
