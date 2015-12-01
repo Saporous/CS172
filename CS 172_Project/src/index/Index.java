@@ -5,17 +5,20 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashMap;
 import java.util.StringTokenizer;
+import java.lang.Float;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.*;
 import org.apache.lucene.index.IndexWriterConfig.*;
+import org.apache.lucene.queryparser.classic.MultiFieldQueryParser;
 import org.apache.lucene.queryparser.classic.ParseException;
-import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
@@ -25,7 +28,6 @@ import org.apache.lucene.util.Version;
 import crawler.Link;
 import crawler.Tweet;
 import twitter4j.GeoLocation;
-import twitter4j.Place;
 
 import com.google.gson.Gson;
 
@@ -62,12 +64,12 @@ public class Index {
 				DateTools.dateToString(tweet.getTimestamp(), DateTools.Resolution.MINUTE),
 				Field.Store.YES));
 
-		Place place = tweet.getPlace();
-		if(place != null) {
-			GeoLocation[][] geo = place.getBoundingBoxCoordinates();
+		
+		if(tweet.getGeolocation() != null) {
+			GeoLocation[][] geo = tweet.getGeolocation();
 			doc.add(new DoubleField("latitude", geo[0][0].getLatitude(),Field.Store.YES));
 			doc.add(new DoubleField("longitude", geo[0][0].getLongitude(),Field.Store.YES));
-			doc.add(new StringField("placeName", place.getFullName(),Field.Store.YES));
+			doc.add(new StringField("placeName", tweet.getPlaceFullName(),Field.Store.YES));
 		}
 		doc.add(new TextField("text", tweet.getText(), Field.Store.YES));
 		
@@ -89,32 +91,54 @@ public class Index {
 		
 	}
 
-	 public static TopDocs search(String indexDir, String queryString, int topk) throws IOException, ParseException{
-		  IndexReader reader = DirectoryReader.open(FSDirectory.open(Paths.get(indexDir)));
-		  IndexSearcher indexSearcher = new IndexSearcher(reader);
+	 public static TopDocs search(IndexSearcher indexSearcher, String queryString, int topk)
+			 throws IOException, ParseException{
+		  //QueryParser queryparser = new QueryParser("text", new StandardAnalyzer());
 		  
-		  QueryParser queryparser = new QueryParser("text", new StandardAnalyzer());
+		  String fields[] = {"text", "screenName", "link", "hashtag"};
+		  HashMap<String, Float> boosts = new HashMap<String, Float>();
+		  boosts.put("text", (float) 1.5);
+		  boosts.put("screenName", (float) 2.5);
+		  boosts.put("link", (float) 2.0);
+		  boosts.put("hashtag", (float) 3.0);
+		  
+		  MultiFieldQueryParser mfQueryParser =
+				  new MultiFieldQueryParser(
+						  fields,
+						  new StandardAnalyzer(),
+						  boosts);
 
 		  try {
-			  StringTokenizer strtok = new StringTokenizer(queryString, " ~`!@#$%^&*()_-+={[}]|:;'<>,./?\"\'\\/\n\t\b\f\r");
+			  StringTokenizer strtok = new StringTokenizer
+					  (queryString, " ~`!$%^&*()-+={[}]|:;'<>,./?\"\'\\/\n\t\b\f\r");
 			  String querytoparse = "";
 			  while(strtok.hasMoreElements()) {
 				  String token = strtok.nextToken();
-				  querytoparse += "text:" + token + "^1" + "title:" + token+ "^1.5";
-				  //querytoparse += "text:" + token;
-			  }  
-			  Query query = queryparser.parse(querytoparse);
+				  querytoparse += token;
+			  }
+
+			  Query query = mfQueryParser.parse(querytoparse);
 			  //System.out.println(query.toString());
 			  TopDocs results = indexSearcher.search(query, topk);
-			  //System.out.println(results.scoreDocs.length); 
-			  //System.out.println(indexSearcher.doc(results.scoreDocs[0].doc).getField("text").stringValue());
 			  return results;   
+			  
 		  } 
 		  catch (Exception e) {
 			  e.printStackTrace();
 		  }
 		  return null;
 	 }
+	 
+	public static IndexSearcher getIndexSearcher(String indexDir) {
+		try {
+			IndexReader reader = DirectoryReader.open(FSDirectory.open(Paths.get(indexDir)));
+			IndexSearcher indexSearcher = new IndexSearcher(reader);
+			return indexSearcher;
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
 	
 	public static void parseJSONIntoIndex(IndexWriter indexWriter, String filePath) {
 		
@@ -134,31 +158,58 @@ public class Index {
 		}catch(IOException e) {
 			e.printStackTrace();
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
-	public static void main(String[] args) {
-		
-		IndexWriter indexWriter = getIndexWriter(Paths.get("./Index"), true);
-		parseJSONIntoIndex(indexWriter,"./Tweets/tweet1.json");
+	
+	public static ScoreDoc[] queryIndex(String indexPath, String query) {
+		IndexSearcher indexSearcher = getIndexSearcher(indexPath);
+		try {
+			TopDocs results = search(indexSearcher, query, 10);
+			System.out.println(results.scoreDocs.length); 
+			return results.scoreDocs;
+			
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (ParseException e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+	
+	public static void updateIndex(String indexPath, boolean overwrite) {
+		IndexWriter indexWriter = getIndexWriter(Paths.get(indexPath), overwrite);
+		parseJSONIntoIndex(indexWriter,"./Tweets/tweet0.json");
 		System.out.println("JSON Loaded into index");
-		
 		try {
 			indexWriter.commit();
 			indexWriter.close();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		try {
-			System.out.println(search("./Index", "swift", 1).getMaxScore());
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (ParseException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+	}
+	
+	public static void main(String[] args) {
+		updateIndex("./Index", true);
+		
+		ScoreDoc[] hits = queryIndex("./Index", "shouts");
+		IndexSearcher indexSearcher = getIndexSearcher("./Index");
+		if(hits.length > 0) {
+			try {
+				for(ScoreDoc hit : hits) {
+					System.out.println(
+							indexSearcher.doc(hit.doc).getField("timestamp").stringValue());
+					System.out.println(
+							indexSearcher.doc(hit.doc).getField("screenName").stringValue());
+					System.out.println(
+							indexSearcher.doc(hit.doc).getField("text").stringValue());
+				}
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+
 		}
+
 	}
 }

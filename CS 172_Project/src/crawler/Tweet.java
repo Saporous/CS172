@@ -11,7 +11,7 @@ import java.util.regex.*;
 
 import com.google.gson.Gson;
 
-import twitter4j.Place;
+import twitter4j.GeoLocation;
 import twitter4j.Status;
 
 //Tweet object, stores tweet data, status are converted to
@@ -25,7 +25,10 @@ public class Tweet {
 	private String name;
 	
 	private Date timestamp;
-	private Place place;
+	//private Place place;
+	private String placeFullName;
+	private String boundingBoxType;
+	private GeoLocation geolocation[][];
 	private String text;
 	
 	private Link links[];
@@ -84,7 +87,12 @@ public class Tweet {
 	//Constructor creates object from status object
 	public Tweet(Status status) {
     	//this.geoLocation = status.getGeoLocation();
-    	this.place = status.getPlace();
+    	//this.place = status.getPlace();
+		if(status.getPlace() != null) {
+			this.placeFullName = status.getPlace().getFullName();
+			this.boundingBoxType = status.getPlace().getBoundingBoxType();
+			this.geolocation = status.getPlace().getBoundingBoxCoordinates();
+		}
     	this.timestamp = status.getCreatedAt();
     	//This part is necessary to store the tweets with UTF-8 encoding
     	//will otherwise get a bunch of ???? for foreign chars
@@ -116,8 +124,21 @@ public class Tweet {
 	}
 	
 	//various get functions for json
+	/*
 	public Place getPlace() {
 		return this.place;
+	}*/
+	
+	public String getPlaceFullName() {
+		return this.placeFullName;
+	}
+	
+	public String getBoundingBoxType() {
+		return this.boundingBoxType;
+	}
+	
+	public GeoLocation[][] getGeolocation() {
+		return this.geolocation;
 	}
 	
 	public Date getTimestamp() {

@@ -28,6 +28,7 @@ public class ThreadWriter implements Runnable {
     			String tweetJson = this.jsonQueue.take();
     			this.tweetFileWriter.write(tweetJson + '\n');
     			this.bytesWritten += tweetJson.length();
+    			//System.out.printf("Bytes Written: %d\r", this.bytesWritten);
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			} catch (IOException e) {
