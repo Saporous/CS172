@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+
+<html>
+
+  <head>
+
+    <style>
+
+      #map {
+
+        width: 500px;
+
+        height: 400px;
+
+      }
+
+      #demo {
+      	width: 100px;
+      	height: 200px;
+      }
+    </style>
+
+
+
+
+	<!-- Load Google Map API -->
+    <script src="https://maps.googleapis.com/maps/api/js"></script>
+
+
+
+
+	<div class="row">
+		<h1><center>CS172 Project</center></h3>
+	</div>
+  </head>
+
+
+  <body>
+
+
+  	<!--  -->
+  	<center><div id="map"></div></center>
+  	<button onclick="getLocation()">Get Location</button><br>
+    Latitude: 
+    <label id="latitude">34</label><br>
+    Longitude: 
+    <label id="longitude">-118.25</label><br>
+
+    <!-- Get User's Geolocation -->
+	<script>
+	var loc = document.getElementById("location");
+	function getLocation() {
+	    if (navigator.geolocation) {
+	        navigator.geolocation.getCurrentPosition(showPosition);
+	    } else {
+	        loc.innerHTML = "Geolocation is not supported by this browser.";
+	    }
+	}
+	function showPosition(position) {
+	    document.getElementById("latitude").innerHTML = position.coords.latitude;
+      document.getElementById("longitude").innerHTML = position.coords.longitude;
+      initialize();
+	}
+	</script>
+	
+    <!-- Map load script -->
+    <script>
+
+      function initialize() {
+
+
+        var mapCanvas = document.getElementById('map');
+        var lat = document.getElementById('latitude').innerHTML;
+        var lon = document.getElementById('longitude').innerHTML;
+
+        var mapOptions = {
+
+          center: new google.maps.LatLng(lat, lon),
+
+          zoom: 10,
+
+          mapTypeId: google.maps.MapTypeId.ROADMAP
+
+        }
+
+        var map = new google.maps.Map(mapCanvas, mapOptions)
+
+      }
+
+      google.maps.event.addDomListener(window, 'load', initialize);
+
+    </script>
+
+
+
+	<form action="index.html" method="post">
+		<fieldset>
+			Query:<br>
+			<input type="text" name="query">
+			<br>
+			<input type="submit" value="Submit">
+			<br>
+		</fieldset>
+	</form>
+
+  </body>
+
+</html>
