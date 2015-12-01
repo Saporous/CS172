@@ -119,7 +119,7 @@ public class Index {
 	}
 	public static void main(String[] args) {
 		
-		IndexWriter indexWriter = getIndexWriter(Paths.get("/Index/i1"), true);
+		IndexWriter indexWriter = getIndexWriter(Paths.get("/Index"), true);
 		parseJSONIntoIndex(indexWriter,"Tweets/tweet1.json");
 		System.out.println("JSON Loaded into index");
 		

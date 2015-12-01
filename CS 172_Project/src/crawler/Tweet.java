@@ -78,6 +78,8 @@ public class Tweet {
 		}
 		return null;
 	}
+	public Tweet(){
+	}
 	
 	//Constructor creates object from status object
 	public Tweet(Status status) {
@@ -104,6 +106,13 @@ public class Tweet {
     	this.lang = status.getLang();
     	this.isRetweet = status.isRetweet();
     	this.hashtags = parseTextForHashtags(this.text);
+	}
+	
+
+	public Tweet JSONToTweet(Object o){
+		Gson gson = new Gson();
+		Tweet t = gson.fromJson((String) o, Tweet.class);
+		return t;
 	}
 	
 	//various get functions for json
