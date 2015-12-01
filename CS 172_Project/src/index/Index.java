@@ -27,6 +27,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
@@ -34,6 +35,7 @@ import org.apache.lucene.util.Version;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
+import org.json.simple.parser.JSONParser;
 
 import crawler.Link;
 import crawler.Tweet;
@@ -80,7 +82,7 @@ public class Index {
 				doc.add(new DoubleField("longitude", geo[0][0].getLongitude(),Field.Store.YES));
 				doc.add(new StringField("placeName", place.getFullName(),Field.Store.YES));
 			}
-			doc.add(new TextField("text", "", Field.Store.YES));
+			doc.add(new TextField("text", tweet.getText(), Field.Store.YES));
 			
 			for(Link link : tweet.getLinks()) {
 				doc.add(new StringField("link", link.getTitle(), Field.Store.YES));
@@ -90,7 +92,7 @@ public class Index {
 				doc.add(new StringField("hashtag", hashtag, Field.Store.YES));
 			}
 			
-			doc.add(new TextField("text", tweet.getLang(), Field.Store.YES));
+			doc.add(new TextField("lang", tweet.getLang(), Field.Store.YES));
 			
 			indexWriter.addDocument(doc);
 		}
@@ -103,7 +105,9 @@ public class Index {
 		InputStream jsonFile = getClass().getResourceAsStream(filePath);
 		Reader readerJSON = new InputStreamReader(jsonFile);
 		
-		Tweet tweets = (Tweet) JSONValue.parse(readerJSON);
+		//Parse returns Object, convert Object into Tweet and append to
+		// tweets array
+		Tweet[] tweets = (Tweet) JSONValue.parse(readerJSON);
 		//JSONArray arrayObjects = (JSONArray) fileObjects;
 		
 		return tweets;
@@ -120,11 +124,12 @@ public class Index {
 		IndexReader reader = DirectoryReader.open(FSDirectory.open(Paths.get(indexDir)));
 		IndexSearcher indexSearcher = new IndexSearcher(reader);
 		
-		QueryParser parser = new QueryParser()
+		QueryParser parser = new QueryParser();
 	}
 	public static void main(String[] args) {
-		
+		System.out.println("Parsing Tweets...");
 		JSONArray jsonObjects = parseJSONFile(args[1]);
+		System.out.println("Done");
 		IndexWriter indexWriter = getIndexWriter(Paths.get(args[0]), Boolean.valueOf(args[2]));
 		
 

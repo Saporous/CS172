@@ -9,6 +9,11 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.regex.*;
 
+import org.json.simple.JSONArray;
+import org.json.simple.JSONAware;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+
 import com.google.gson.Gson;
 
 import twitter4j.Place;
@@ -78,6 +83,8 @@ public class Tweet {
 		}
 		return null;
 	}
+	public Tweet(){
+	}
 	
 	//Constructor creates object from status object
 	public Tweet(Status status) {
@@ -104,6 +111,13 @@ public class Tweet {
     	this.lang = status.getLang();
     	this.isRetweet = status.isRetweet();
     	this.hashtags = parseTextForHashtags(this.text);
+	}
+	
+
+	public Tweet JSONToTweet(Object o){
+		Gson gson = new Gson();
+		Tweet t = gson.fromJson((String) o, Tweet.class);
+		return t;
 	}
 	
 	//various get functions for json
