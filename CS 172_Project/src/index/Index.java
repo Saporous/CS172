@@ -5,15 +5,18 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.StringTokenizer;
 
-
-import org.apache.lucene.*;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.*;
 import org.apache.lucene.index.IndexWriterConfig.*;
+import org.apache.lucene.queryparser.classic.ParseException;
+import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Version;
@@ -66,7 +69,7 @@ public class Index {
 			doc.add(new DoubleField("longitude", geo[0][0].getLongitude(),Field.Store.YES));
 			doc.add(new StringField("placeName", place.getFullName(),Field.Store.YES));
 		}
-		doc.add(new TextField("text", "", Field.Store.YES));
+		doc.add(new TextField("text", tweet.getText(), Field.Store.YES));
 		
 		if(tweet.getLinks() != null) {
 			for(Link link : tweet.getLinks()) {
@@ -80,20 +83,38 @@ public class Index {
 			}
 		}
 		
-		doc.add(new TextField("text", tweet.getLang(), Field.Store.YES));
+		doc.add(new TextField("lang", tweet.getLang(), Field.Store.YES));
 		
 		indexWriter.addDocument(doc);
 		
 	}
 
-	/*
-	public static void search(String indexDir, String query) throws IOException, ParseException{
-		IndexReader reader = DirectoryReader.open(FSDirectory.open(Paths.get(indexDir)));
-		IndexSearcher indexSearcher = new IndexSearcher(reader);
-		
-		QueryParser parser = new QueryParser()
-	}
-	*/
+	 public static TopDocs search(String indexDir, String queryString, int topk) throws IOException, ParseException{
+		  IndexReader reader = DirectoryReader.open(FSDirectory.open(Paths.get(indexDir)));
+		  IndexSearcher indexSearcher = new IndexSearcher(reader);
+		  
+		  QueryParser queryparser = new QueryParser("text", new StandardAnalyzer());
+
+		  try {
+			  StringTokenizer strtok = new StringTokenizer(queryString, " ~`!@#$%^&*()_-+={[}]|:;'<>,./?\"\'\\/\n\t\b\f\r");
+			  String querytoparse = "";
+			  while(strtok.hasMoreElements()) {
+				  String token = strtok.nextToken();
+				  querytoparse += "text:" + token + "^1" + "title:" + token+ "^1.5";
+				  //querytoparse += "text:" + token;
+			  }  
+			  Query query = queryparser.parse(querytoparse);
+			  //System.out.println(query.toString());
+			  TopDocs results = indexSearcher.search(query, topk);
+			  //System.out.println(results.scoreDocs.length); 
+			  //System.out.println(indexSearcher.doc(results.scoreDocs[0].doc).getField("text").stringValue());
+			  return results;   
+		  } 
+		  catch (Exception e) {
+			  e.printStackTrace();
+		  }
+		  return null;
+	 }
 	
 	public static void parseJSONIntoIndex(IndexWriter indexWriter, String filePath) {
 		
@@ -119,14 +140,23 @@ public class Index {
 	}
 	public static void main(String[] args) {
 		
-		IndexWriter indexWriter = getIndexWriter(Paths.get("/Index"), true);
-		parseJSONIntoIndex(indexWriter,"Tweets/tweet1.json");
+		IndexWriter indexWriter = getIndexWriter(Paths.get("./Index"), true);
+		parseJSONIntoIndex(indexWriter,"./Tweets/tweet1.json");
 		System.out.println("JSON Loaded into index");
 		
 		try {
 			indexWriter.commit();
 			indexWriter.close();
 		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		try {
+			System.out.println(search("./Index", "swift", 1).getMaxScore());
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (ParseException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
